@@ -1,0 +1,29 @@
+listStockMovements:
+    handler: src/functions/journal/stockMovements/endpoint.handler
+    description: Stock history, whole shop or one product
+    events:
+      - httpApi:
+          path: /stock-movements
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}/index/*
+
+listAuditLogs:
+    handler: src/functions/journal/auditLogs/endpoint.handler
+    description: Audit trail, whole journal or one record
+    events:
+      - httpApi:
+          path: /audit-logs
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}/index/*

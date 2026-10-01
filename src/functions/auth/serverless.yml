@@ -1,0 +1,114 @@
+signIn:
+    handler: src/functions/auth/signIn/endpoint.handler
+    description: Sign in with a phone number and a password
+    events:
+      - httpApi:
+          path: /auth/sign-in
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminInitiateAuth
+        Resource:
+          - !GetAtt StaffUserPool.Arn
+
+refreshToken:
+    handler: src/functions/auth/refreshToken/endpoint.handler
+    description: Refresh Cognito access token
+    events:
+      - httpApi:
+          path: /auth/refresh-token
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminInitiateAuth
+        Resource:
+          - !GetAtt StaffUserPool.Arn
+
+# ── Client (shop-client) auth — proxied through API, no direct Cognito on frontend ──
+clientSignUp:
+    handler: src/functions/auth/clientSignUp/endpoint.handler
+    description: Register a new shop client
+    environment:
+      CLIENTS_USER_POOL_CLIENT_ID: !Ref CustomersUserPoolClient
+    events:
+      - httpApi:
+          path: /auth/client/sign-up
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminGetUser
+          - cognito-idp:AdminCreateUser
+          - cognito-idp:AdminSetUserPassword
+        Resource:
+          - !GetAtt CustomersUserPool.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+          - secretsmanager:DescribeSecret
+        Resource:
+          - arn:aws:secretsmanager:${aws:region}:${aws:accountId}:secret:${self:service}/${self:provider.stage}/gmail-smtp*
+
+clientConfirm:
+    handler: src/functions/auth/clientConfirm/endpoint.handler
+    description: Confirm client email with OTP code
+    environment:
+      CLIENTS_USER_POOL_CLIENT_ID: !Ref CustomersUserPoolClient
+    events:
+      - httpApi:
+          path: /auth/client/confirm
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminCreateUser
+          - cognito-idp:AdminSetUserPassword
+          - cognito-idp:AdminGetUser
+        Resource:
+          - !GetAtt CustomersUserPool.Arn
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:DeleteItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+          - secretsmanager:DescribeSecret
+        Resource:
+          - arn:aws:secretsmanager:${aws:region}:${aws:accountId}:secret:${self:service}/${self:provider.stage}/gmail-smtp*
+
+clientSignIn:
+    handler: src/functions/auth/clientSignIn/endpoint.handler
+    description: Sign in a shop client with a phone number and a password
+    environment:
+      CLIENTS_USER_POOL_CLIENT_ID: !Ref CustomersUserPoolClient
+    events:
+      - httpApi:
+          path: /auth/client/sign-in
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminInitiateAuth
+        Resource:
+          - !GetAtt CustomersUserPool.Arn
+
+clientRefreshToken:
+    handler: src/functions/auth/clientRefreshToken/endpoint.handler
+    description: Refresh a shop client access token
+    environment:
+      CLIENTS_USER_POOL_CLIENT_ID: !Ref CustomersUserPoolClient
+    events:
+      - httpApi:
+          path: /auth/client/refresh-token
+          method: POST

@@ -1,0 +1,14 @@
+node_modules
+.serverless
+
+# Kept on this machine, not in the repository.
+#
+# migration/ carries the shop's old exports — 197 clients and 201 drivers by
+# name, phone, card number and address — plus a dump of the live tables. A git
+# history is forever and is read by anyone ever given the repo, so none of that
+# goes in. The one-off scripts that reset and repaired data during setup stay
+# with it; they are dated to a moment, not part of the service.
+migration/
+scripts/*.js
+
+.DS_Store

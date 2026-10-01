@@ -1,0 +1,334 @@
+Resources:
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-products-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,       AttributeType: S }
+        - { AttributeName: sk,       AttributeType: S }
+        - { AttributeName: dataType, AttributeType: S }
+        - { AttributeName: tk,       AttributeType: S }
+        - { AttributeName: fk,       AttributeType: S }
+        - { AttributeName: sihk,     AttributeType: S }
+        - { AttributeName: sehk,     AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-type-resource
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: tk,       KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-parent-resource
+          KeySchema:
+            - { AttributeName: fk, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sihk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-status-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sehk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-orders-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,       AttributeType: S }
+        - { AttributeName: sk,       AttributeType: S }
+        - { AttributeName: dataType, AttributeType: S }
+        - { AttributeName: tk,       AttributeType: S }
+        - { AttributeName: fk,       AttributeType: S }
+        - { AttributeName: sihk,     AttributeType: S }
+        - { AttributeName: sehk,     AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-type-resource
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: tk,       KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-parent-resource
+          KeySchema:
+            - { AttributeName: fk, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sihk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-status-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sehk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  CategoriesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-categories-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,       AttributeType: S }
+        - { AttributeName: sk,       AttributeType: S }
+        - { AttributeName: dataType, AttributeType: S }
+        - { AttributeName: tk,       AttributeType: S }
+        - { AttributeName: fk,       AttributeType: S }
+        - { AttributeName: sihk,     AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-type-resource
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: tk,       KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-parent-resource
+          KeySchema:
+            - { AttributeName: fk, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sihk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  ClientsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-clients-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,   AttributeType: S }
+        - { AttributeName: sk,   AttributeType: S }
+        - { AttributeName: sihk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: id,   KeyType: HASH  }
+            - { AttributeName: sihk, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  TransportersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-transporters-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,   AttributeType: S }
+        - { AttributeName: sk,   AttributeType: S }
+        - { AttributeName: sihk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: id,   KeyType: HASH  }
+            - { AttributeName: sihk, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  # Declared invoices, and the files they were rendered into.
+  #
+  # Two kinds share the table because they are never read apart: a declared
+  # invoice is always wanted with its documents, and a document is meaningless
+  # without the invoice it belongs to.
+  #
+  # The number is IN the sort key, which is what makes it unique rather than
+  # merely checked: a second write of 2026/014 is refused by the database, not
+  # by a lookup that another writer can slip past.
+  DeclaredTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-declared-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,   AttributeType: S }
+        - { AttributeName: sk,   AttributeType: S }
+        - { AttributeName: sihk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: id,   KeyType: HASH  }
+            - { AttributeName: sihk, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  # Single record: the business identity, tax id, stamp duty and bank details.
+  # No GSI — it is only ever read by its primary key.
+  SettingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-settings-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: id, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+
+  # Money received from clients. One record per payment, plus a negative record
+  # for each reversal — payments are never deleted.
+  PaymentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-payments-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,   AttributeType: S }
+        - { AttributeName: sk,   AttributeType: S }
+        - { AttributeName: fk,   AttributeType: S }
+        - { AttributeName: sihk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-parent-resource
+          KeySchema:
+            - { AttributeName: fk, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: id,   KeyType: HASH  }
+            - { AttributeName: sihk, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  # Stock movements and audit log share one table. Both are append-only
+  # journals with the same access pattern: newest first, or everything about
+  # one record. They are separated by dataType.
+  JournalTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-journal-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,       AttributeType: S }
+        - { AttributeName: sk,       AttributeType: S }
+        - { AttributeName: dataType, AttributeType: S }
+        - { AttributeName: fk,       AttributeType: S }
+        - { AttributeName: sihk,     AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        # Whole journal in date order.
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sihk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        # Everything about one product, or one record.
+        - IndexName: gsi-parent-resource
+          KeySchema:
+            - { AttributeName: fk, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+
+  # Staff records and roles. Both are small and read on almost every request,
+  # so they share one table and are separated by dataType.
+  StaffTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-staff-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,       AttributeType: S }
+        - { AttributeName: sk,       AttributeType: S }
+        - { AttributeName: dataType, AttributeType: S }
+        - { AttributeName: sihk,     AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sihk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  # Suppliers and customer requests. Both are small reference lists with the
+  # same access pattern, separated by dataType.
+  CatalogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-catalog-${self:provider.stage}-table
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: id,       AttributeType: S }
+        - { AttributeName: sk,       AttributeType: S }
+        - { AttributeName: dataType, AttributeType: S }
+        - { AttributeName: sihk,     AttributeType: S }
+      KeySchema:
+        - { AttributeName: id, KeyType: HASH  }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi-resource-created
+          KeySchema:
+            - { AttributeName: dataType, KeyType: HASH  }
+            - { AttributeName: sihk,     KeyType: RANGE }
+          Projection: { ProjectionType: ALL }

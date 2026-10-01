@@ -1,0 +1,119 @@
+createProduct:
+    handler: src/functions/products/create/endpoint.handler
+    description: Create a new product
+    events:
+      - httpApi:
+          path: /products
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+
+getProduct:
+    handler: src/functions/products/get/endpoint.handler
+    description: Get a product by ID
+    events:
+      - httpApi:
+          path: /products/{id}
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+
+listProducts:
+    handler: src/functions/products/list/endpoint.handler
+    description: List products with optional pagination and category filter
+    events:
+      - httpApi:
+          path: /products
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}/index/*
+
+updateProduct:
+    handler: src/functions/products/update/endpoint.handler
+    description: Update a product
+    events:
+      - httpApi:
+          path: /products/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+
+deleteProduct:
+    handler: src/functions/products/delete/endpoint.handler
+    description: Delete a product
+    events:
+      - httpApi:
+          path: /products/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+
+getProductImageUploadUrl:
+    handler: src/functions/products/imageUploadUrl/endpoint.handler
+    description: Return a presigned S3 PUT URL for uploading a product image
+    events:
+      - httpApi:
+          path: /products/{id}/image/upload-url
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action: [dynamodb:GetItem]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+      - Effect: Allow
+        Action: [s3:PutObject]
+        Resource: 'arn:aws:s3:::${self:service}-${self:provider.stage}-storage-${aws:accountId}/uploads/*'
+
+deleteProductImage:
+    handler: src/functions/products/deleteImage/endpoint.handler
+    description: Delete a product image from S3 and clear the product record
+    events:
+      - httpApi:
+          path: /products/{id}/image
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action: [dynamodb:GetItem, dynamodb:UpdateItem]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+      - Effect: Allow
+        Action: [s3:DeleteObject]
+        Resource: 'arn:aws:s3:::${self:service}-${self:provider.stage}-storage-${aws:accountId}/images/*'
+
+processProductImage:
+    handler: src/functions/products/processImage/handler.handler
+    description: Process uploaded product images with sharp (resize → JPEG + WebP)
+    memorySize: 512
+    timeout: 30
+    iamRoleStatements:
+      - Effect: Allow
+        Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+        Resource: 'arn:aws:s3:::${self:service}-${self:provider.stage}-storage-${aws:accountId}/*'
+      - Effect: Allow
+        Action: [dynamodb:UpdateItem]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}

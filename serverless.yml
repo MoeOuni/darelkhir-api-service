@@ -1,0 +1,140 @@
+# No `org` or `app`: those register the stack with the Serverless dashboard
+# and take one of the two application slots on that account, which the other
+# shops already hold. Without them the framework is a CloudFormation generator
+# and talks only to AWS.
+#
+# The service name is what every table, bucket, SSM parameter and secret is
+# named after — so this one change is what keeps Dar El Khir's data and keys
+# apart from every other shop deployed to the same account.
+service: darelkhir-api-service
+frameworkVersion: '3'
+
+plugins:
+  - serverless-esbuild
+  - serverless-iam-roles-per-function
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  # A published version per function, plus a stack output for each, is 132
+  # CloudFormation resources for nothing: no alias, no provisioned concurrency
+  # and no traffic shifting points at them. CloudFormation allows 500 resources
+  # in a stack and this one was over the line, so they are not published.
+  versionFunctions: false
+  httpApi:
+    cors:
+      allowedOrigins:
+        - https://darelkhir.ounitek.com
+        - https://www.darelkhir.ounitek.com
+        - https://admin.darelkhir.ounitek.com
+        - http://localhost:5173
+      allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      allowedHeaders: [Content-Type, Authorization, X-Api-Key]
+      allowCredentials: true
+  # Every mutating function appends to the journal through the audit
+  # middleware, so the grant lives here instead of in 18 separate blocks.
+  # defaultInherit below makes the per-function roles keep it.
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+      Resource:
+        - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-journal-${self:provider.stage}-table
+    # Permission checks read the staff record and its role on every guarded
+    # endpoint, so the grant lives at provider level too.
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:Query
+      Resource:
+        - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-staff-${self:provider.stage}-table
+        - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-staff-${self:provider.stage}-table/index/*
+    # Reading a staff member's real name and phone. The access token carries
+    # neither: on a phone-username pool the username claim is a UUID.
+    - Effect: Allow
+      Action:
+        - cognito-idp:AdminGetUser
+      Resource:
+        - !GetAtt StaffUserPool.Arn
+  environment:
+    STAGE: ${self:provider.stage}
+    GMAIL_SMTP_SECRET_NAME: ${self:service}/${self:provider.stage}/gmail-smtp
+    PRODUCTS_TABLE_NAME: !Ref ProductsTable
+    ORDERS_TABLE_NAME: !Ref OrdersTable
+    CATEGORIES_TABLE_NAME: !Ref CategoriesTable
+    CLIENTS_TABLE_NAME: !Ref ClientsTable
+    TRANSPORTERS_TABLE_NAME: !Ref TransportersTable
+    DECLARED_TABLE_NAME: !Ref DeclaredTable
+    SETTINGS_TABLE_NAME: !Ref SettingsTable
+    JOURNAL_TABLE_NAME: !Ref JournalTable
+    STAFF_TABLE_NAME: !Ref StaffTable
+    CATALOG_TABLE_NAME: !Ref CatalogTable
+    PAYMENTS_TABLE_NAME: !Ref PaymentsTable
+    COGNITO_USER_POOL_ID: !Ref StaffUserPool
+    CLIENTS_USER_POOL_ID: !Ref CustomersUserPool
+    S3_BUCKET_NAME: '${self:service}-${self:provider.stage}-storage-${aws:accountId}'
+    COGNITO_CLIENT_ID: !Ref StaffUserPoolClient
+
+
+package:
+  individually: true
+  patterns:
+    - '!**/*.ts'
+    - '!node_modules/**'
+    - '!__tests__/**'
+    - '!docs/**'
+
+functions:
+  - ${file(src/functions/products/serverless.yml)}
+  - ${file(src/functions/orders/serverless.yml)}
+  - ${file(src/functions/categories/serverless.yml)}
+  - ${file(src/functions/clients/serverless.yml)}
+  - ${file(src/functions/auth/serverless.yml)}
+  - ${file(src/functions/transporters/serverless.yml)}
+  - ${file(src/functions/declared/serverless.yml)}
+  - ${file(src/functions/settings/serverless.yml)}
+  - ${file(src/functions/journal/serverless.yml)}
+  - ${file(src/functions/staff/serverless.yml)}
+  - ${file(src/functions/reports/serverless.yml)}
+  - ${file(src/functions/catalog/serverless.yml)}
+  - ${file(src/functions/payments/serverless.yml)}
+
+resources:
+  - ${file(infrastructure/resources/db.yml)}
+  - ${file(infrastructure/resources/iam.yml)}
+  - ${file(infrastructure/resources/cognito.yml)}
+  - ${file(infrastructure/resources/s3.yml)}
+  - ${file(infrastructure/resources/monitoring.yml)}
+  - ${file(infrastructure/resources/outputs.yml)}
+
+custom:
+  serverless-iam-roles-per-function:
+    defaultInherit: true
+  productsTableName: ${self:service}-products-${self:provider.stage}-table
+  ordersTableName: ${self:service}-orders-${self:provider.stage}-table
+  categoriesTableName: ${self:service}-categories-${self:provider.stage}-table
+  clientsTableName: ${self:service}-clients-${self:provider.stage}-table
+  declaredTableName: ${self:service}-declared-${self:provider.stage}-table
+  transportersTableName: ${self:service}-transporters-${self:provider.stage}-table
+  settingsTableName: ${self:service}-settings-${self:provider.stage}-table
+  journalTableName: ${self:service}-journal-${self:provider.stage}-table
+  staffTableName: ${self:service}-staff-${self:provider.stage}-table
+  catalogTableName: ${self:service}-catalog-${self:provider.stage}-table
+  paymentsTableName: ${self:service}-payments-${self:provider.stage}-table
+  s3BucketName: ${self:service}-${self:provider.stage}-storage-${aws:accountId}
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    target: node18
+    exclude:
+      - '@aws-sdk/*'
+    external:
+      - sharp
+    packager: npm
+    packagerOptions:
+      scripts:
+        - npm install --os=linux --cpu=x64 sharp

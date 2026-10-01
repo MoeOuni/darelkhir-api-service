@@ -1,0 +1,151 @@
+listSupplier:
+    handler: src/functions/catalog/suppliers/endpoint.list
+    description: list supplier
+    events:
+      - httpApi:
+          path: /suppliers
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+createSupplier:
+    handler: src/functions/catalog/suppliers/endpoint.create
+    description: create supplier
+    events:
+      - httpApi:
+          path: /suppliers
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+updateSupplier:
+    handler: src/functions/catalog/suppliers/endpoint.update
+    description: update supplier
+    events:
+      - httpApi:
+          path: /suppliers/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+removeSupplier:
+    handler: src/functions/catalog/suppliers/endpoint.remove
+    description: remove supplier
+    events:
+      - httpApi:
+          path: /suppliers/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+listRequest:
+    handler: src/functions/catalog/requests/endpoint.list
+    description: list request
+    events:
+      - httpApi:
+          path: /requests
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+createRequest:
+    handler: src/functions/catalog/requests/endpoint.create
+    description: create request
+    events:
+      - httpApi:
+          path: /requests
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+updateRequest:
+    handler: src/functions/catalog/requests/endpoint.update
+    description: update request
+    events:
+      - httpApi:
+          path: /requests/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*
+
+removeRequest:
+    handler: src/functions/catalog/requests/endpoint.remove
+    description: remove request
+    events:
+      - httpApi:
+          path: /requests/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.catalogTableName}/index/*

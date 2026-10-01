@@ -1,0 +1,128 @@
+getMyPermissions:
+    handler: src/functions/staff/me/endpoint.handler
+    description: What the signed-in worker is allowed to do
+    events:
+      - httpApi:
+          path: /me/permissions
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+
+listStaff:
+    handler: src/functions/staff/list/endpoint.handler
+    description: List staff accounts
+    events:
+      - httpApi:
+          path: /staff
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+
+createStaff:
+    handler: src/functions/staff/create/endpoint.handler
+    description: Create a staff account and its Cognito login
+    events:
+      - httpApi:
+          path: /staff
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminCreateUser
+          - cognito-idp:AdminSetUserPassword
+          - cognito-idp:AdminGetUser
+        Resource:
+          - !GetAtt StaffUserPool.Arn
+
+updateStaff:
+    handler: src/functions/staff/update/endpoint.handler
+    description: Change a staff member's role or switch them off
+    events:
+      - httpApi:
+          path: /staff/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+
+listRoles:
+    handler: src/functions/roles/list/endpoint.handler
+    description: List roles and the permission catalogue
+    events:
+      - httpApi:
+          path: /roles
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+
+upsertRole:
+    handler: src/functions/roles/upsert/endpoint.handler
+    description: Create a role or change its permissions
+    events:
+      - httpApi:
+          path: /roles
+          method: PUT
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+
+removeRole:
+    handler: src/functions/roles/remove/endpoint.handler
+    description: Delete a role nobody carries
+    events:
+      - httpApi:
+          path: /roles/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*

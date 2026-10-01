@@ -1,0 +1,73 @@
+createTransporter:
+    handler: src/functions/transporters/create/endpoint.handler
+    description: Create a new transporter
+    events:
+      - httpApi:
+          path: /transporters
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+
+getTransporter:
+    handler: src/functions/transporters/get/endpoint.handler
+    description: Get a transporter by ID
+    events:
+      - httpApi:
+          path: /transporters/{id}
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+
+listTransporters:
+    handler: src/functions/transporters/list/endpoint.handler
+    description: List all transporters
+    events:
+      - httpApi:
+          path: /transporters
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}/index/*
+
+updateTransporter:
+    handler: src/functions/transporters/update/endpoint.handler
+    description: Update a transporter
+    events:
+      - httpApi:
+          path: /transporters/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+
+deleteTransporter:
+    handler: src/functions/transporters/delete/endpoint.handler
+    description: Delete a transporter
+    events:
+      - httpApi:
+          path: /transporters/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}

@@ -1,0 +1,43 @@
+getSettings:
+    handler: src/functions/settings/get/endpoint.handler
+    description: Read the business settings (staff)
+    events:
+      - httpApi:
+          path: /settings
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+
+updateSettings:
+    handler: src/functions/settings/update/endpoint.handler
+    description: Update the business settings (staff)
+    events:
+      - httpApi:
+          path: /settings
+          method: PUT
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+
+getPublicSettings:
+    handler: src/functions/settings/getPublic/endpoint.handler
+    description: Contact details for the storefront (no token)
+    events:
+      - httpApi:
+          path: /settings/public
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}

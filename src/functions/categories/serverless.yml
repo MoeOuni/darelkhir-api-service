@@ -1,0 +1,73 @@
+createCategory:
+    handler: src/functions/categories/create/endpoint.handler
+    description: Create a new category
+    events:
+      - httpApi:
+          path: /categories
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}
+
+getCategory:
+    handler: src/functions/categories/get/endpoint.handler
+    description: Get a category by ID
+    events:
+      - httpApi:
+          path: /categories/{id}
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}
+
+listCategories:
+    handler: src/functions/categories/list/endpoint.handler
+    description: List categories with optional parent filter
+    events:
+      - httpApi:
+          path: /categories
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}/index/*
+
+updateCategory:
+    handler: src/functions/categories/update/endpoint.handler
+    description: Update a category
+    events:
+      - httpApi:
+          path: /categories/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}
+
+deleteCategory:
+    handler: src/functions/categories/delete/endpoint.handler
+    description: Delete a category
+    events:
+      - httpApi:
+          path: /categories/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}

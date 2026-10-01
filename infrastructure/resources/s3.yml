@@ -1,0 +1,68 @@
+Resources:
+  StorageBucket:
+    Type: AWS::S3::Bucket
+    DependsOn:
+      - ProcessProductImagePermission
+    Properties:
+      BucketName: ${self:service}-${self:provider.stage}-storage-${aws:accountId}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - https://darelkhir.ounitek.com
+              - https://www.darelkhir.ounitek.com
+              - https://admin.darelkhir.ounitek.com
+              - http://localhost:5173
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedHeaders: ['*']
+            MaxAge: 3000
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+          - Id: ExpireUploadsTemp
+            Status: Enabled
+            Prefix: uploads/
+            ExpirationInDays: 1
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: uploads/
+            Function: !GetAtt ProcessProductImageLambdaFunction.Arn
+
+  # Product images are public by design — the storefront loads them directly.
+  # Invoices are NOT public: they hold customer names, phones, addresses and
+  # prices, and the file names are guessable. They are served through a
+  # short-lived presigned URL from the invoice endpoint instead.
+  StorageBucketPublicReadPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StorageBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource:
+              - !Sub '${StorageBucket.Arn}/images/*'
+
+  ProcessProductImagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt ProcessProductImageLambdaFunction.Arn
+      Principal: s3.amazonaws.com
+      SourceArn: 'arn:aws:s3:::${self:service}-${self:provider.stage}-storage-${aws:accountId}'

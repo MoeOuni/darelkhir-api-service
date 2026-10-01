@@ -1,0 +1,157 @@
+createDeclaredInvoice:
+    handler: src/functions/declared/create/endpoint.handler
+    description: Raise a declared invoice — moves no stock, no balance, no counter
+    events:
+      - httpApi:
+          path: /declared-invoices
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+      # Stamp duty is a business setting, so the total needs to read it.
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+
+listDeclaredInvoices:
+    handler: src/functions/declared/list/endpoint.handler
+    description: List declared invoices, newest first
+    events:
+      - httpApi:
+          path: /declared-invoices
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}/index/*
+
+declaredNumberAvailable:
+    handler: src/functions/declared/available/endpoint.handler
+    description: Whether a declared invoice number is still free
+    events:
+      - httpApi:
+          path: /declared-invoices/available
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+
+getDeclaredInvoice:
+    handler: src/functions/declared/get/endpoint.handler
+    description: One declared invoice by its number
+    events:
+      - httpApi:
+          path: /declared-invoices/{number}
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+
+updateDeclaredInvoice:
+    handler: src/functions/declared/update/endpoint.handler
+    description: Correct a draft, or mark it final
+    events:
+      - httpApi:
+          path: /declared-invoices/{number}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+
+deleteDeclaredInvoice:
+    handler: src/functions/declared/remove/endpoint.handler
+    description: Remove a declared invoice, freeing its number
+    events:
+      - httpApi:
+          path: /declared-invoices/{number}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:DeleteItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+
+
+getDeclaredDocument:
+    handler: src/functions/declared/document/endpoint.handler
+    description: Render a declared invoice, file it, and hand back a download link
+    timeout: 29
+    memorySize: 1024
+    # The renderer draws with the shop's own fonts and marks, and `individually`
+    # means each function ships only what it names. Nothing here fails at deploy
+    # or in any test — the Lambda simply cannot open a .ttf that was never put
+    # in its zip, and says so the first time somebody asks for a PDF.
+    package:
+      patterns:
+        - src/functions/orders/invoice/data/*.ttf
+        - src/functions/orders/invoice/data/*.png
+    events:
+      - httpApi:
+          path: /declared-invoices/{number}/document
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+        Resource:
+          - arn:aws:s3:::${self:custom.s3BucketName}/declared/*
+
+listStoredDocuments:
+    handler: src/functions/declared/documents/endpoint.handler
+    description: The register of rendered files, for one invoice or all of them
+    events:
+      - httpApi:
+          path: /declared-documents
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.declaredTableName}/index/*
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+        Resource:
+          - arn:aws:s3:::${self:custom.s3BucketName}/declared/*

@@ -1,0 +1,54 @@
+Outputs:
+  ProductsTableName:
+    Description: Products DynamoDB table name
+    Value: !Ref ProductsTable
+    Export:
+      Name: ${self:service}-${self:provider.stage}-products-table
+
+  ProductsTableArn:
+    Description: Products DynamoDB table ARN
+    Value: !GetAtt ProductsTable.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-products-table-arn
+
+  OrdersTableName:
+    Description: Orders DynamoDB table name
+    Value: !Ref OrdersTable
+    Export:
+      Name: ${self:service}-${self:provider.stage}-orders-table
+
+  CategoriesTableName:
+    Description: Categories DynamoDB table name
+    Value: !Ref CategoriesTable
+    Export:
+      Name: ${self:service}-${self:provider.stage}-categories-table
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref StaffUserPool
+    Export:
+      Name: ${self:service}-${self:provider.stage}-cognito-user-pool-id
+
+  CognitoUserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref StaffUserPoolClient
+    Export:
+      Name: ${self:service}-${self:provider.stage}-cognito-client-id
+
+  ClientsUserPoolId:
+    Description: Clients Cognito User Pool ID
+    Value: !Ref CustomersUserPool
+    Export:
+      Name: ${self:service}-${self:provider.stage}-clients-pool-id
+
+  ClientsUserPoolClientId:
+    Description: Clients Cognito User Pool Client ID
+    Value: !Ref CustomersUserPoolClient
+    Export:
+      Name: ${self:service}-${self:provider.stage}-clients-pool-client-id
+
+  StorageBucketName:
+    Description: S3 storage bucket name
+    Value: !Ref StorageBucket
+    Export:
+      Name: ${self:service}-${self:provider.stage}-storage-bucket

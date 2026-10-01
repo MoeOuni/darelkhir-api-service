@@ -1,0 +1,211 @@
+createClient:
+    handler: src/functions/clients/create/endpoint.handler
+    description: Create a new client (admin-initiated, auto-verified in Cognito)
+    environment:
+      CLIENTS_USER_POOL_ID: !Ref CustomersUserPool
+    events:
+      - httpApi:
+          path: /clients
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminCreateUser
+          - cognito-idp:AdminSetUserPassword
+        Resource:
+          - arn:aws:cognito-idp:${aws:region}:${aws:accountId}:userpool/*
+
+getClient:
+    handler: src/functions/clients/get/endpoint.handler
+    description: Get a client by ID
+    events:
+      - httpApi:
+          path: /clients/{id}
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+
+getMyClient:
+    handler: src/functions/clients/getMy/endpoint.handler
+    description: Get my client profile
+    events:
+      - httpApi:
+          path: /clients/me
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+
+listClients:
+    handler: src/functions/clients/list/endpoint.handler
+    description: List all clients
+    events:
+      - httpApi:
+          path: /clients
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}/index/*
+
+updateClient:
+    handler: src/functions/clients/update/endpoint.handler
+    description: Update a client profile
+    events:
+      - httpApi:
+          path: /clients/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      # Setting the debt carried over from the notebook moves the balance, so
+      # this recomputes it from the orders and payments the way a payment does.
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}/index/*
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}/index/*
+
+updateMyClient:
+    handler: src/functions/clients/updateMy/endpoint.handler
+    description: Update my client profile
+    events:
+      - httpApi:
+          path: /clients/me
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+
+deleteClient:
+    handler: src/functions/clients/delete/endpoint.handler
+    description: Disable a client in Cognito and remove their DynamoDB profile
+    environment:
+      CLIENTS_USER_POOL_ID: !Ref CustomersUserPool
+    events:
+      - httpApi:
+          path: /clients/{id}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action:
+          - cognito-idp:AdminDisableUser
+          - cognito-idp:AdminDeleteUser
+        Resource:
+          - arn:aws:cognito-idp:${aws:region}:${aws:accountId}:userpool/*
+
+clientPrices:
+    handler: src/functions/clients/prices/endpoint.handler
+    description: Read, set and clear the prices agreed with a client
+    events:
+      - httpApi:
+          path: /clients/{id}/prices
+          method: GET
+      - httpApi:
+          path: /clients/{id}/prices/{productId}
+          method: PUT
+      - httpApi:
+          path: /clients/{id}/prices/{productId}
+          method: DELETE
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}/index/*
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}/index/*
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.staffTableName}/index/*
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}
+
+# Cognito PostConfirmation trigger — fires after self-registration OTP confirmation
+clientPostConfirmation:
+    handler: src/functions/clients/postConfirmation/handler.handler
+    description: Create DynamoDB profile after front-office self-registration
+    environment:
+      # Override provider-level !Ref CustomersUserPool with a literal to break the CloudFormation
+      # circular dependency: CustomersUserPool (LambdaConfig !GetAtt) <-> this function (provider env !Ref).
+      # This handler receives all user info from the Cognito trigger event and does not use this value.
+      CLIENTS_USER_POOL_ID: 'n/a'
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+
+getClientStatement:
+    handler: src/functions/clients/statement/endpoint.handler
+    description: The client account, one line per order and payment
+    events:
+      - httpApi:
+          path: /clients/{id}/statement
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}/index/*
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}/index/*

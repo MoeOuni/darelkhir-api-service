@@ -1,0 +1,278 @@
+createOrder:
+    handler: src/functions/orders/create/endpoint.handler
+    description: Create a new order
+    events:
+      - httpApi:
+          path: /orders
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          # The agreed prices for this client are a Query on this table.
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      # The transporter is attached at creation now, so its name is resolved here.
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+      # Stamp duty and the business identity come from the settings record.
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+          - secretsmanager:DescribeSecret
+        Resource:
+          - arn:aws:secretsmanager:${aws:region}:${aws:accountId}:secret:${self:service}/${self:provider.stage}/gmail-smtp*
+
+getOrder:
+    handler: src/functions/orders/get/endpoint.handler
+    description: Get an order by ID
+    events:
+      - httpApi:
+          path: /orders/{id}
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+
+listOrders:
+    handler: src/functions/orders/list/endpoint.handler
+    description: List all orders (admin only)
+    events:
+      - httpApi:
+          path: /orders
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}/index/*
+
+listMyOrders:
+    handler: src/functions/orders/listMy/endpoint.handler
+    description: List orders for the authenticated client
+    events:
+      - httpApi:
+          path: /orders/my
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}/index/*
+
+updateOrder:
+    handler: src/functions/orders/update/endpoint.handler
+    description: Update an order status
+    events:
+      - httpApi:
+          path: /orders/{id}
+          method: PATCH
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+      # Confirming can carry a payment, which updates the client balance, and
+      # editing the lines re-reads this client's agreed prices — a Query.
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}/index/*
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}/index/*
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}/index/*
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+          - secretsmanager:DescribeSecret
+        Resource:
+          - arn:aws:secretsmanager:${aws:region}:${aws:accountId}:secret:${self:service}/${self:provider.stage}/gmail-smtp*
+
+getOrderDocument:
+    handler: src/functions/orders/invoice/document.handler
+    description: Proforma, invoice or credit note PDF for an order
+    package:
+      patterns:
+        - src/functions/orders/invoice/data/*.ttf
+        - src/functions/orders/invoice/data/*.png
+    events:
+      - httpApi:
+          path: /orders/{id}/document
+          method: GET
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          # The agreed prices for this client are a Query on this table.
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+        # Every prefix buildDocumentKey() can produce. A missing one here is
+        # invisible until someone presses the button on a deployed stack, so
+        # __tests__/iam-document-prefixes.test.ts pins the two lists together.
+        Resource:
+          - arn:aws:s3:::${self:custom.s3BucketName}/invoices/*
+          - arn:aws:s3:::${self:custom.s3BucketName}/proformas/*
+          - arn:aws:s3:::${self:custom.s3BucketName}/credit-notes/*
+          - arn:aws:s3:::${self:custom.s3BucketName}/stops/*
+          - arn:aws:s3:::${self:custom.s3BucketName}/delivery-notes/*
+          - arn:aws:s3:::${self:custom.s3BucketName}/bundles/*
+
+createCreditNote:
+    handler: src/functions/orders/creditNote/endpoint.handler
+    description: Issue a credit note that cancels an already-issued invoice
+    events:
+      - httpApi:
+          path: /orders/{id}/credit-note
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}/index/*
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      # The balance is recomputed from the orders and the payments both.
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:GetItem
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}/index/*
+
+interpretOrder:
+    handler: src/functions/orders/interpret/endpoint.handler
+    description: Read an order out of a sentence in Tunisian Arabic
+    # The gateway in front of this gives up at 30s and takes the Lambda's
+    # answer with it, so there is no point waiting longer than it does.
+    timeout: 29
+    environment:
+      # Which vendor reads the sentence. Change the parameter, redeploy, done.
+      AI_PROVIDER: ${ssm:/${self:service}/${self:provider.stage}/ai-provider, 'anthropic'}
+      AI_MODEL: ${ssm:/${self:service}/${self:provider.stage}/ai-model, ''}
+      AI_BASE_URL: ${ssm:/${self:service}/${self:provider.stage}/ai-base-url, ''}
+      AI_JSON_MODE: ${ssm:/${self:service}/${self:provider.stage}/ai-json-mode, 'schema'}
+      ANTHROPIC_API_KEY: ${ssm:/${self:service}/${self:provider.stage}/anthropic-api-key, ''}
+      ANTHROPIC_WORKSPACE_ID: ${ssm:/${self:service}/${self:provider.stage}/anthropic-workspace-id, ''}
+      OPENAI_API_KEY: ${ssm:/${self:service}/${self:provider.stage}/openai-api-key, ''}
+    events:
+      - httpApi:
+          path: /orders/interpret
+          method: POST
+    iamRoleStatements:
+      # Reads only. This route proposes an order; it never writes one.
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}/index/*
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}/index/*
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.transportersTableName}/index/*
+
+speakReply:
+    handler: src/functions/orders/speak/endpoint.handler
+    description: Turn Yahya's reply into audio
+    timeout: 29
+    environment:
+      TTS_PROVIDER: ${ssm:/${self:service}/${self:provider.stage}/tts-provider, 'openai'}
+      TTS_API_KEY: ${ssm:/${self:service}/${self:provider.stage}/tts-api-key, ''}
+      TTS_BASE_URL: ${ssm:/${self:service}/${self:provider.stage}/tts-base-url, ''}
+      TTS_MODEL: ${ssm:/${self:service}/${self:provider.stage}/tts-model, ''}
+      TTS_VOICE: ${ssm:/${self:service}/${self:provider.stage}/tts-voice, ''}
+    events:
+      - httpApi:
+          path: /speech
+          method: POST
+
+transcribeOrder:
+    handler: src/functions/orders/transcribe/endpoint.handler
+    description: Turn a recorded order into words
+    timeout: 29
+    environment:
+      STT_API_KEY: ${ssm:/${self:service}/${self:provider.stage}/stt-api-key, ''}
+      STT_BASE_URL: ${ssm:/${self:service}/${self:provider.stage}/stt-base-url, ''}
+      STT_LANGUAGE: ${ssm:/${self:service}/${self:provider.stage}/stt-language, ''}
+    events:
+      - httpApi:
+          path: /transcribe
+          method: POST
