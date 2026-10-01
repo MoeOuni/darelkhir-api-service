@@ -35,6 +35,11 @@ export class CreateProductUseCase {
       taxRate: data.taxRate ?? 19,
       priceTTC: parseFloat((data.priceHT * (1 + (data.taxRate ?? 19) / 100)).toFixed(3)),
       code: data.code,
+      // The shop's own words for it — "clim 12", "كليماتيزور". The schema has
+      // always accepted these, but they were never passed on, so a product
+      // created with shortcut names saved without them and only an edit
+      // afterwards put them in.
+      aliases: data.aliases ?? [],
       discountedPrice: data.discountedPrice,
       discountPercentage: data.discountPercentage,
       stockAvailable: data.stockAvailable ?? 0,

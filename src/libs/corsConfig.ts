@@ -8,6 +8,8 @@ export const ALLOWED_ORIGINS = [
   'https://darelkhir.ounitek.com',
   'https://www.darelkhir.ounitek.com',
   'https://admin.darelkhir.ounitek.com',
+  // Amplify's own address for the dashboard, until a custom domain is attached.
+  'https://master.d2iwkw4rs3znl.amplifyapp.com',
   'http://localhost:5173',
 ];
 

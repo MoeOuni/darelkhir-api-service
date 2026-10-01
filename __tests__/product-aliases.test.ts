@@ -42,3 +42,40 @@ describe('a product answers to the shop’s own words', () => {
     expect((p.getDirty() as any).searchKey).toContain('grillage 20');
   });
 });
+
+/**
+ * Creating a product keeps the names typed with it.
+ *
+ * The schema accepted `aliases` on create but the use case never passed them
+ * to the entity, so the shortcut names entered in the new-product form were
+ * dropped on save — the search and the voice assistant then could not find
+ * the article by the words the shop actually uses, until someone edited it.
+ */
+import { CreateProductUseCase } from '../src/functions/products/create/useCase';
+
+jest.mock('../src/libs/journal', () => ({ recordStockMovement: jest.fn() }));
+
+describe('creating a product with its shortcut names', () => {
+  it('saves the aliases it was given', async () => {
+    const created: any[] = [];
+    const repository = { create: async (e: any) => void created.push(e) } as any;
+
+    await new CreateProductUseCase(repository).execute(
+      {
+        name: { fr: 'Climatiseur Condor 12000 BTU', ar: 'مكيف كوندور 12000' },
+        priceHT: 1260,
+        taxRate: 19,
+        purchasePrice: 1050,
+        code: 'CLIM-C12',
+        aliases: ['clim 12', 'كليماتيزور 12'],
+        stockAvailable: 0,
+        categoryId: '6f1c5a90-4f2b-4c8e-9a31-6b0e2d7f4c15',
+      },
+      'u-1',
+    );
+
+    expect(created[0].aliases).toEqual(['clim 12', 'كليماتيزور 12']);
+    // And they reach the search index, which is what makes them findable.
+    expect(created[0].valueOf().searchKey).toContain('clim 12');
+  });
+});
