@@ -22,8 +22,8 @@ const BRAND = {
   panel: '#f1f6fa',
   hairline: '#d3e1ec',
   zebra: '#f9fbfd',
-  subtitleFr: 'VENTE EN GROS PRODUIT DIVERS',
-  subtitleAr: 'بيع مواد مختلفة بالجملة',
+  subtitleFr: "Vente d'appareils électroménagers",
+  subtitleAr: "بيع الأجهزة المنزلية",
   nameAr: 'دار الخير',
   /**
    * Dar El Khir's blue, from the palette supplied with the logo (#2F7DB3).
