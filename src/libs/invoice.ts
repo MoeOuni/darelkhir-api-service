@@ -1245,3 +1245,25 @@ export async function renderOrderInvoicePdf(order: IOrder, context?: InvoiceCont
   doc.end();
   return done;
 }
+
+/**
+ * The shop's stationery, for the other papers it prints.
+ *
+ * Price tickets are drawn with the same fonts, the same mark and the same blue
+ * as the invoice, so a ticket on a fridge and the invoice handed over for it
+ * read as one shop. Shared from here rather than copied, so a change to the
+ * brand reaches both.
+ */
+export const STATIONERY = { BRAND, FONTS, F, LOGO_PATH } as const;
+
+/** Registers the four weights on a document, under the names `F` uses. */
+export function registerStationeryFonts(doc: PDFKit.PDFDocument): void {
+  for (const [name, file] of [
+    [F.regular, FONTS.regular],
+    [F.medium, FONTS.medium],
+    [F.bold, FONTS.bold],
+    [F.black, FONTS.black],
+  ] as const) {
+    if (fs.existsSync(file)) doc.registerFont(name, file);
+  }
+}

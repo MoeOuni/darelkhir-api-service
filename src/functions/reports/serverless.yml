@@ -17,3 +17,41 @@ getReportsSummary:
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}/index/*
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}/index/*
+
+sendInvestorReport:
+    handler: src/functions/reports/investor/endpoint.handler
+    description: Investor report — starts a background run that builds the PDF and emails it
+    # The dashboard's call returns at once; this limit is for the background
+    # run, which is not held to the API gateway's thirty seconds.
+    timeout: 120
+    memorySize: 1024
+    package:
+      patterns:
+        - src/functions/orders/invoice/data/*.ttf
+        - src/functions/orders/invoice/data/*.png
+    events:
+      - httpApi:
+          path: /reports/investor
+          method: POST
+    iamRoleStatements:
+      # To start its own background run, and nothing else.
+      - Effect: Allow
+        Action: [lambda:InvokeFunction]
+        Resource: arn:aws:lambda:${aws:region}:${aws:accountId}:function:${self:service}-${self:provider.stage}-sendInvestorReport
+      - Effect: Allow
+        Action: [dynamodb:Scan]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action: [dynamodb:GetItem, dynamodb:Query]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}
+      - Effect: Allow
+        Action: [secretsmanager:GetSecretValue, secretsmanager:DescribeSecret]
+        Resource:
+          - arn:aws:secretsmanager:${aws:region}:${aws:accountId}:secret:${self:service}/${self:provider.stage}/gmail-smtp*

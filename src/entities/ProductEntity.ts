@@ -1,7 +1,7 @@
 import { Entity } from './Entity';
 import { IProduct } from '@libs/interfaces';
 import { DataType, ProductStatus } from '@libs/enums';
-import { productAlerts } from '@libs/product-alerts';
+import { productAlerts, productMargin } from '@libs/product-alerts';
 
 export class ProductEntity extends Entity<IProduct> implements IProduct {
   readonly id: string;
@@ -90,7 +90,7 @@ export class ProductEntity extends Entity<IProduct> implements IProduct {
     // Worked out on the way out rather than stored, so a product that is put
     // right stops being flagged the moment it is saved, with nothing to
     // recompute and no stale flag left behind on the record.
-    return { ...rest, alerts: productAlerts(this) };
+    return { ...rest, alerts: productAlerts(this), margin: productMargin(this) };
   }
 
   /**
@@ -104,7 +104,9 @@ export class ProductEntity extends Entity<IProduct> implements IProduct {
    * would, and none of it is any of a customer's business.
    */
   toCustomerDTO(): Record<string, any> {
-    const { purchasePrice: _purchasePrice, alerts: _alerts, ...rest } = this.toPublicDTO();
+    // The margin goes too: selling price minus margin is the cost, so it gives
+    // the cost away exactly as the number itself would.
+    const { purchasePrice: _purchasePrice, alerts: _alerts, margin: _margin, ...rest } = this.toPublicDTO();
     return rest;
   }
 }

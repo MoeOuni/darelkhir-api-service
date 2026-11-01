@@ -36,6 +36,8 @@ export class SettingsEntity extends Entity<ISettings> implements ISettings {
   logoUrl?: string;
   /** Warn a worker when a client owes more than this. Empty means never warn. */
   balanceWarningThreshold?: number;
+  investorCapital?: number;
+  reportRecipients?: string[];
   createdAt: string;
   updatedAt: string;
 
@@ -63,6 +65,8 @@ export class SettingsEntity extends Entity<ISettings> implements ISettings {
     this.websiteUrl = attr.websiteUrl;
     this.logoUrl = attr.logoUrl;
     this.balanceWarningThreshold = attr.balanceWarningThreshold;
+    this.investorCapital = attr.investorCapital;
+    this.reportRecipients = attr.reportRecipients;
     this.createdAt = attr.createdAt as string;
     this.updatedAt = attr.updatedAt as string;
   }

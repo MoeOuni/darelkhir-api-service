@@ -27,6 +27,10 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   taxIdAr: '',
   stampTax: 1,
   defaultTaxRate: 19,
+  // The investors' contribution and who receives their report, as agreed on
+  // 01/11/2026. Both can be changed from the settings screen.
+  investorCapital: 70000,
+  reportRecipients: ['hamzaouiii93@gmail.com', 'moe.ouni20@gmail.com'],
 };
 
 let cache: { value: BusinessSettings; expiresAt: number } | null = null;

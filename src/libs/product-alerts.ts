@@ -13,6 +13,12 @@
  */
 
 export type ProductAlert =
+  /**
+   * No price to sell it at. It goes into an order at 0.000 and leaves the shop
+   * for nothing — the case a supplier import creates on purpose, since the
+   * goods arrive with a cost and the shop prices them afterwards.
+   */
+  | 'missing_selling_price'
   /** No cost against it, so its margin is the whole sale price. */
   | 'missing_purchase_price'
   /** It is sold for less than it was bought for. Every sale loses money. */
@@ -22,6 +28,8 @@ export type ProductAlert =
 
 /** How serious it is, for deciding what the screens colour red. */
 export const ALERT_SEVERITY: Record<ProductAlert, 'danger' | 'warning'> = {
+  // Worse than selling at a loss: the whole article is given away.
+  missing_selling_price: 'danger',
   sold_below_purchase: 'danger',
   missing_purchase_price: 'warning',
   discount_above_list: 'warning',
@@ -62,6 +70,11 @@ export function productAlerts(product: PricedProduct): ProductAlert[] {
   const alerts: ProductAlert[] = [];
   const selling = sellingPriceHT(product);
 
+  // Nothing to charge. Checked first and on its own: with no selling price the
+  // loss check below has nothing to compare, so it used to stay silent about
+  // the one product that loses the most.
+  if (selling === undefined) alerts.push('missing_selling_price');
+
   if (!positive(product.purchasePrice)) {
     alerts.push('missing_purchase_price');
   } else if (selling !== undefined && selling < product.purchasePrice) {
@@ -85,4 +98,29 @@ export function productAlerts(product: PricedProduct): ProductAlert[] {
 /** True when anything at all is wrong with it. */
 export function needsAttention(product: PricedProduct): boolean {
   return productAlerts(product).length > 0;
+}
+
+/**
+ * What the shop keeps on one unit: selling price minus purchase price, both
+ * before tax.
+ *
+ * HT on both sides because the VAT is not the shop's — it is collected for the
+ * State and the VAT paid to the supplier is claimed back. Measuring against a
+ * TTC price would count the State's share as profit.
+ *
+ * The percentage is of the purchase price — "bought at 100, sold at 120, 20 %"
+ * — which is how the counter reckons it. Null until both prices exist: a
+ * margin against a missing number is not a small margin, it is no answer.
+ */
+export function productMargin(
+  product: PricedProduct,
+): { amountHT: number; percentOfCost: number } | null {
+  const selling = sellingPriceHT(product);
+  if (selling === undefined || !positive(product.purchasePrice)) return null;
+
+  const amount = selling - product.purchasePrice;
+  return {
+    amountHT: Math.round(amount * 1000) / 1000,
+    percentOfCost: Math.round((amount / product.purchasePrice) * 1000) / 10,
+  };
 }

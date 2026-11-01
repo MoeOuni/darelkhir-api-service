@@ -117,3 +117,26 @@ processProductImage:
         Action: [dynamodb:UpdateItem]
         Resource:
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+
+productLabels:
+    handler: src/functions/products/labels/endpoint.handler
+    description: Price tickets for the shop floor, eight to an A4 sheet
+    timeout: 29
+    memorySize: 1024
+    # Drawn with the shop's fonts and mark; each function ships only what it names.
+    package:
+      patterns:
+        - src/functions/orders/invoice/data/*.ttf
+        - src/functions/orders/invoice/data/*.png
+    events:
+      - httpApi:
+          path: /products/labels
+          method: POST
+    iamRoleStatements:
+      - Effect: Allow
+        Action: [dynamodb:GetItem]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+      - Effect: Allow
+        Action: [s3:PutObject, s3:GetObject]
+        Resource: 'arn:aws:s3:::${self:custom.s3BucketName}/labels/*'

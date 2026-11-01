@@ -50,5 +50,6 @@ export const handler = middleware({
   audit: { action: 'settings.update', entityType: 'settings' },
   auth: true,
   cors: true,
+  requires: 'settings.edit',
   validation: { body: UpdateSettingsSchema },
 })(updateSettingsHandler);

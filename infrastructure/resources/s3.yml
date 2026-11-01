@@ -33,6 +33,11 @@ Resources:
             Status: Enabled
             Prefix: uploads/
             ExpirationInDays: 1
+          # Price tickets are printed once and stuck on; nothing reads them again.
+          - Id: ExpirePriceTickets
+            Status: Enabled
+            Prefix: labels/
+            ExpirationInDays: 1
       NotificationConfiguration:
         LambdaConfigurations:
           - Event: 's3:ObjectCreated:*'

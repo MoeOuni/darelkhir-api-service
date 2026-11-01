@@ -56,7 +56,14 @@ export async function getSmtpConfig(): Promise<SmtpConfig> {
 
       const secret = await getJsonSecret<RawSecret>(secretName);
       return SmtpSecretSchema.parse(normalizeSecretKeys(secret));
-    })();
+    })().catch((err) => {
+      // A failure is not remembered. Kept, it would answer every later call in
+      // this warm container with the same error — so a secret created after
+      // the first failed attempt stayed invisible until AWS recycled the
+      // function, and emails failed with nothing to show why.
+      smtpConfigPromise = null;
+      throw err;
+    });
   }
 
   return smtpConfigPromise;
@@ -75,7 +82,10 @@ export async function getMailTransport() {
           pass: smtp.pass,
         },
       });
-    })();
+    })().catch((err) => {
+      transportPromise = null;
+      throw err;
+    });
   }
 
   return transportPromise;

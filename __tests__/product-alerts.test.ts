@@ -1,4 +1,4 @@
-import { productAlerts, sellingPriceHT, needsAttention } from '@libs/product-alerts';
+import { productAlerts, sellingPriceHT, needsAttention, productMargin } from '@libs/product-alerts';
 import { ProductEntity } from '@/entities/ProductEntity';
 import { DataType, ProductStatus } from '@libs/enums';
 
@@ -132,5 +132,99 @@ describe('what a shop customer is allowed to see', () => {
 
   it('never stores the alerts on the record — they are worked out on the way out', () => {
     expect(entity.valueOf()).not.toHaveProperty('alerts');
+  });
+});
+
+/**
+ * A product with no selling price.
+ *
+ * A supplier import brings goods in with a cost and leaves the price for the
+ * shop to set, and until it does, the product goes into an order at 0.000.
+ * The loss check could not see it — with no selling price there was nothing
+ * to compare with the cost — so the product that loses the most raised
+ * nothing at all.
+ */
+describe('a product nobody has priced yet', () => {
+  it('is flagged, and flagged as serious', () => {
+    expect(productAlerts(product({ priceHT: 0, priceTTC: 0 }))).toEqual(['missing_selling_price']);
+    expect(needsAttention(product({ priceHT: 0, priceTTC: 0 }))).toBe(true);
+  });
+
+  it('is flagged when the price was never written at all', () => {
+    expect(productAlerts(product({ priceHT: undefined, priceTTC: undefined }))).toContain(
+      'missing_selling_price',
+    );
+  });
+
+  it('comes first when the cost is missing too', () => {
+    expect(productAlerts(product({ priceHT: 0, priceTTC: 0, purchasePrice: 0 }))).toEqual([
+      'missing_selling_price',
+      'missing_purchase_price',
+    ]);
+  });
+
+  it('is not flagged when a reduced price is the price it sells at', () => {
+    // An agreed or promotional price is still a price.
+    expect(productAlerts(product({ priceHT: 0, priceTTC: 0, discountedPrice: 95 }))).not.toContain(
+      'missing_selling_price',
+    );
+  });
+
+  it('is not also reported as sold at a loss — it is one problem, said once', () => {
+    expect(productAlerts(product({ priceHT: 0, priceTTC: 0 }))).not.toContain('sold_below_purchase');
+  });
+
+  it('reaches the product as the screens receive it', () => {
+    const entity = new ProductEntity({
+      id: DataType.PRODUCT,
+      sk: `${DataType.PRODUCT}#p1`,
+      dataType: DataType.PRODUCT,
+      name: { fr: 'Machine à laver Condor 7 kg 1000 trs noire', ar: 'غسالة ملابس كوندور 7 كغ' },
+      code: 'CON-F710LB',
+      purchasePrice: 783.1,
+      priceHT: 0,
+      priceTTC: 0,
+      taxRate: 19,
+      stockAvailable: 3,
+      categoryId: 'c1',
+      status: ProductStatus.ACTIVE,
+      createdAt: '2026-10-03T00:00:00.000Z',
+      updatedAt: '2026-10-03T00:00:00.000Z',
+    } as any);
+
+    expect(entity.toPublicDTO().alerts).toEqual(['missing_selling_price']);
+  });
+});
+
+
+/**
+ * What the shop keeps on one unit.
+ *
+ * Selling price minus purchase price, both HT: the VAT is collected for the
+ * State and claimed back from the supplier, so it is nobody's margin.
+ */
+describe('the margin', () => {
+  it('is selling price HT minus purchase price HT, as a share of the cost', () => {
+    // CON-F710LB: bought 783.100 HT, sold 980.000 HT.
+    expect(productMargin({ purchasePrice: 783.1, priceHT: 980, taxRate: 19 })).toEqual({
+      amountHT: 196.9,
+      percentOfCost: 25.1,
+    });
+  });
+
+  it('is measured against the reduced price when there is one, tax taken out', () => {
+    // 1 071 TTC at 19 % is 900 HT, against a 750 cost.
+    expect(
+      productMargin({ purchasePrice: 750, priceHT: 1000, taxRate: 19, discountedPrice: 1071 }),
+    ).toEqual({ amountHT: 150, percentOfCost: 20 });
+  });
+
+  it('is negative when the product sells below cost — said plainly, not hidden', () => {
+    expect(productMargin({ purchasePrice: 100, priceHT: 90, taxRate: 19 })?.amountHT).toBe(-10);
+  });
+
+  it('has no answer until both prices exist', () => {
+    expect(productMargin({ purchasePrice: 783.1, priceHT: 0, taxRate: 19 })).toBeNull();
+    expect(productMargin({ purchasePrice: 0, priceHT: 980, taxRate: 19 })).toBeNull();
   });
 });

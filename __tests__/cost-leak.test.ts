@@ -94,3 +94,18 @@ describe('supplier cost is not exposed to anonymous callers', () => {
     }
   });
 });
+
+
+/**
+ * Selling price minus the margin is the cost, so the margin gives the cost
+ * away as surely as purchasePrice does.
+ */
+describe('the margin stays with the staff', () => {
+  it('is in the staff view', () => {
+    expect(makeProduct().toPublicDTO().margin).toEqual({ amountHT: 7.5, percentOfCost: 60 });
+  });
+
+  it('is never in the customer view', () => {
+    expect(makeProduct().toCustomerDTO()).not.toHaveProperty('margin');
+  });
+});

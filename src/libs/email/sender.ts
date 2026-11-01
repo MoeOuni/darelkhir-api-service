@@ -3,11 +3,13 @@ import type { RenderedEmail } from '@libs/email';
 import type { EmailBranding } from '@libs/email';
 
 type SendEmailInput = {
-  to: string;
+  /** One address, or several who all see each other on the message. */
+  to: string | string[];
   email: RenderedEmail;
+  attachments?: { filename: string; content: Buffer; contentType?: string }[];
 };
 
-export async function sendEmail({ to, email }: SendEmailInput) {
+export async function sendEmail({ to, email, attachments }: SendEmailInput) {
   const smtp = await getSmtpConfig();
   const transport = await getMailTransport();
 
@@ -17,6 +19,7 @@ export async function sendEmail({ to, email }: SendEmailInput) {
     subject: email.subject,
     html: email.html,
     text: email.text,
+    attachments,
   });
 }
 

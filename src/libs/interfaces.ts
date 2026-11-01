@@ -41,6 +41,13 @@ export interface ISettings {
   websiteUrl?: string;
   logoUrl?: string;
   balanceWarningThreshold?: number;
+  /**
+   * The money the investors put in, in DT. Nothing else in the app records
+   * it, and the investor report measures everything against it.
+   */
+  investorCapital?: number;
+  /** Who receives the investor report by email. */
+  reportRecipients?: string[];
   createdAt: string;
   updatedAt: string;
 }

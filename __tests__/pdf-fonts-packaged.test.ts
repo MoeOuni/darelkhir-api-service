@@ -23,7 +23,7 @@ import yaml from 'js-yaml';
 const ROOT = path.join(__dirname, '..');
 
 /** The modules that open a font file. */
-const RENDERERS = ['@libs/invoice', '@libs/declared-document'];
+const RENDERERS = ['@libs/invoice', '@libs/declared-document', '@libs/labels', '@libs/investor-report'];
 
 function readIfExists(file: string): string {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

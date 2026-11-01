@@ -26,6 +26,9 @@ export const UpdateSettingsSchema = z.object({
   websiteUrl: z.string().url().optional().or(z.literal('')),
   logoUrl: z.string().url().optional().or(z.literal('')),
   balanceWarningThreshold: z.number().min(0).optional(),
+  investorCapital: z.number().min(0).max(1_000_000_000).optional(),
+  /** The investor report goes to these addresses, and only these. */
+  reportRecipients: z.array(z.string().trim().toLowerCase().email()).min(1).max(10).optional(),
 });
 
 export type UpdateSettingsInput = z.infer<typeof UpdateSettingsSchema>;
