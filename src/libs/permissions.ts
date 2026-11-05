@@ -28,6 +28,11 @@ export const PERMISSIONS = {
   'declared.finalise': 'Mark a declared invoice final',
   'declared.delete': 'Delete a declared invoice',
 
+  // Money going out: charges and what is owed to suppliers.
+  'finance.view': 'See charges and supplier debts',
+  'finance.record': 'Record a charge, a supplier debt or a payment to a supplier',
+  'finance.edit': 'Change or delete a charge or a supplier debt',
+
   'payments.view': 'See payments and balances',
   'payments.create': 'Record a payment',
   'payments.reverse': 'Reverse a payment',

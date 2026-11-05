@@ -29,18 +29,21 @@ async function scanAll(TableName: string, dataType?: string): Promise<Row[]> {
 
 export async function loadReportSource(investment: number, generatedAt: string): Promise<ReportSource> {
   const c = getConfig();
-  const [products, categories, orders, payments, movements, clients] = await Promise.all([
+  const [products, categories, orders, payments, movements, clients, finance] = await Promise.all([
     scanAll(c.productsTableName, DataType.PRODUCT),
     scanAll(c.categoriesTableName, DataType.CATEGORY),
     scanAll(c.ordersTableName, DataType.ORDER),
     scanAll(c.paymentsTableName, DataType.PAYMENT),
     scanAll(c.journalTableName, DataType.STOCK_MOVEMENT),
     scanAll(c.clientsTableName),
+    scanAll(c.financeTableName),
   ]);
   return {
     generatedAt, investment, products, categories, orders, payments, movements,
     clients: clients.filter((r) => r.dataType === DataType.CLIENT),
     agreedPrices: clients.filter((r) => r.dataType === DataType.CLIENT_PRICE).length,
+    charges: finance.filter((r) => r.dataType === DataType.CHARGE),
+    supplierDebts: finance.filter((r) => r.dataType === DataType.SUPPLIER_DEBT),
   };
 }
 

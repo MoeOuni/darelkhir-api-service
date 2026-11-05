@@ -1,5 +1,6 @@
 import { Context } from 'aws-lambda';
 import { middleware, ExtendedEvent } from '@libs/middleware';
+import { byRoute } from '@libs/route';
 import { RequestRepository } from '@/repositories/RequestRepository';
 import { RequestEntity } from '@/entities/RequestEntity';
 import { IdGenerator } from '@/utils/IdGenerator';
@@ -94,24 +95,31 @@ const deleteHandler = async (event: ExtendedEvent, _c: Context) => {
   return { statusCode: 200, body: JSON.stringify({ message: 'Request deleted', data: { id } }) };
 };
 
-export const list = middleware({ auth: true, cors: true })(listHandler);
+const list = middleware({ auth: true, cors: true })(listHandler);
 
-export const create = middleware({
+const create = middleware({
   auth: true,
   audit: { action: 'request.create', entityType: 'request' },
   cors: true,
   validation: { body: CreateRequestSchema },
 })(createHandler);
 
-export const update = middleware({
+const update = middleware({
   auth: true,
   audit: { action: 'request.update', entityType: 'request' },
   cors: true,
   validation: { body: UpdateRequestSchema },
 })(updateHandler);
 
-export const remove = middleware({
+const remove = middleware({
   auth: true,
   audit: { action: 'request.delete', entityType: 'request' },
   cors: true,
 })(deleteHandler);
+
+export const handler = byRoute({
+  'GET /requests': list,
+  'POST /requests': create,
+  'PATCH /requests/{id}': update,
+  'DELETE /requests/{id}': remove,
+});

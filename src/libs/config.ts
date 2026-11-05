@@ -10,6 +10,7 @@ export const getConfig = () => ({
   journalTableName: process.env.JOURNAL_TABLE_NAME || '',
   staffTableName: process.env.STAFF_TABLE_NAME || '',
   catalogTableName: process.env.CATALOG_TABLE_NAME || '',
+  financeTableName: process.env.FINANCE_TABLE_NAME || '',
   paymentsTableName: process.env.PAYMENTS_TABLE_NAME || '',
   cognitoUserPoolId: process.env.COGNITO_USER_POOL_ID || '',
   cognitoClientId: process.env.COGNITO_CLIENT_ID || '',

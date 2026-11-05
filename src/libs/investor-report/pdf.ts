@@ -50,6 +50,13 @@ function vis(text: string): string {
   return ordered.map((w) => w.text).join(' ');
 }
 
+/** What a charge was for, as the report says it. */
+const CHARGE_LABEL: Record<string, string> = {
+  pay: 'Rémunération', supplies: 'Fournitures et matériel', transport: 'Transport et livraison', rent: 'Loyer',
+  utilities: 'Électricité, eau, téléphone', other: 'Autres', order: 'Frais sur commandes',
+};
+const METHOD_LABEL: Record<string, string> = { cash: 'Espèces', check: 'Chèque', bank_transfer: 'Virement' };
+
 type Cell = string | { text: string; color?: string; bold?: boolean; size?: number };
 type Col = { title: string; width: number; align?: 'left' | 'right' };
 
@@ -73,6 +80,9 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
   };
   const newPage = () => { doc.addPage(); y = TOP; };
   const ensure = (h: number) => { if (y + h > BOTTOM) newPage(); };
+  // A chapter opens a page, unless the last one only spilled a few lines onto
+  // this one: a page holding nothing but those lines would look like a mistake.
+  const chapter = () => { if (y > TOP + 120) newPage(); else y += 14; };
   const para = (text: string, o: { size?: number; color?: string; f?: string; width?: number; gap?: number } = {}) => {
     const size = o.size ?? 9.2; const width = o.width ?? CW; const f = o.f ?? F.regular;
     const h = height(text, f, size, width);
@@ -125,7 +135,11 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
     };
     ensure(headerHeight + rowHeight(rows[0] ?? foot ?? [''], F.regular) * Math.min(3, rows.length || 1));
     header();
-    rows.forEach((row) => draw(row, F.regular, C.line2));
+    rows.forEach((row, i) => {
+      // A total never goes over the page alone: the last row goes with it.
+      if (foot && i === rows.length - 1 && y + rowHeight(row, F.regular) + rowHeight(foot, F.bold) > BOTTOM) { newPage(); header(); }
+      draw(row, F.regular, C.line2);
+    });
     if (foot) draw(foot.map((c) => (typeof c === 'string' ? { text: c, bold: true } : { ...c, bold: true })), F.bold, C.line, 0.8, true);
     y += 12;
   };
@@ -149,28 +163,31 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
   section('L’essentiel', 'Les chiffres clés');
   const tiles: [string, string, string][] = [
     ['Apport des investisseurs', t.investment > 0 ? `${f0(t.investment)} DT` : 'Non renseigné', 'Montant saisi dans les paramètres'],
-    ['Achats de marchandises', `${f0(t.spent)} DT`, `${t.investment > 0 ? `${pct((t.spent / t.investment) * 100)} de l’apport · ` : ''}${t.unitsBought} articles`],
+    ['Achats de marchandises', `${f0(t.spent)} DT`, `${t.unitsBought} articles · ${f0(t.paidToSuppliers)} DT payés`],
     ['Ventes', `${f0(t.revenue)} DT`, `${t.invoices} factures · ${t.unitsSold} articles vendus`],
     ['Marge brute', `${f0(t.margin)} DT`, t.revenue ? `${pct((t.margin / t.revenue) * 100)} des ventes` : '—'],
-    ['Stock restant', `${f0(t.stockCost)} DT`, `${t.unitsOnHand} articles au prix d’achat · ${f0(t.stockPrice)} DT au prix affiché`],
-    ['Trésorerie attendue', `${f0(t.cashEstimate)} DT`, `Avant charges non enregistrées · ${f0(t.receivable)} DT à encaisser`],
+    ['Charges', `${f0(t.charges)} DT`, rep.chargeRows.length ? `${rep.chargeRows.length} dépense(s) enregistrée(s)` : 'Aucune charge enregistrée'],
+    ['Résultat', `${f0(t.gain)} DT`, 'Marge brute moins charges'],
+    ['Stock restant', `${f0(t.stockCost)} DT`, `${t.unitsOnHand} articles · ${f0(t.stockPrice)} DT au prix affiché`],
+    ['Trésorerie attendue', `${f0(t.cashEstimate)} DT`, `Argent en main · ${f0(t.receivable)} DT encore à encaisser`],
+    ['Dettes fournisseurs', `${f0(t.supplierDebt)} DT`, t.supplierDebt > 0 ? 'Marchandises reçues, pas encore payées' : 'Aucune dette enregistrée'],
   ];
-  const tw = CW / 3; const th = 64;
-  ensure(th * 2);
+  const tw = CW / 3; const th = 50;
+  ensure(th * 3);
   tiles.forEach(([label, value, sub], i) => {
     const x = L + (i % 3) * tw; const ty = y + Math.floor(i / 3) * th;
     doc.rect(x, ty, tw, th).lineWidth(0.6).strokeColor(C.line).stroke();
-    font(F.bold, 7.6, C.ink2).text(label, x + 10, ty + 9, { width: tw - 20, lineBreak: false });
-    font(F.black, 16, C.ink).text(value, x + 10, ty + 21, { width: tw - 20, lineBreak: false });
-    font(F.regular, 7, C.ink3).text(sub, x + 10, ty + 42, { width: tw - 20, lineGap: 0.5 });
+    font(F.bold, 7.4, C.ink2).text(label, x + 9, ty + 7, { width: tw - 18, lineBreak: false });
+    font(F.black, 14.5, C.ink).text(value, x + 9, ty + 17, { width: tw - 18, lineBreak: false });
+    font(F.regular, 6.7, C.ink3).text(sub, x + 9, ty + 36, { width: tw - 18, lineGap: 0.3 });
   });
-  y += th * 2 + 16;
+  y += th * 3 + 12;
 
   // ── Where the money is ─────────────────────────────────────────────────
   section('L’apport', 'Où se trouve l’argent aujourd’hui',
-    t.investment > 0 && t.spent > t.investment
-      ? `Les achats dépassent l’apport de ${fr3(t.spent - t.investment)} DT, payés avec l’argent des ventes. Les ventes ont ensuite transformé une partie du stock en trésorerie, avec une marge.`
-      : 'L’apport a servi à acheter des marchandises. Les ventes ont ensuite transformé une partie du stock en trésorerie, avec une marge.');
+    t.investment > 0 && t.paidToSuppliers > t.investment
+      ? `Les paiements aux fournisseurs dépassent l’apport de ${fr3(t.paidToSuppliers - t.investment)} DT, réglés avec l’argent des ventes. Les ventes ont ensuite transformé une partie du stock en trésorerie, avec une marge.`
+      : 'L’apport a servi à payer les marchandises. Les ventes ont ensuite transformé une partie du stock en trésorerie, avec une marge.');
   const parts: [string, number, string][] = [
     ['Stock au prix d’achat', t.stockCost, C.s1], ['Trésorerie attendue', Math.max(0, t.cashEstimate), C.s2], ['À encaisser', t.receivable, C.s3],
   ];
@@ -217,31 +234,33 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
   const half = (CW - 24) / 2;
   const left = bridge(L, half, 'Mouvements de l’argent', [
     ['Apport des investisseurs', fr3(t.investment)],
-    ['Achats de marchandises', fr3(-t.spent), C.bad],
+    ['Payé aux fournisseurs', fr3(-t.paidToSuppliers), C.bad],
     ['Encaissements des clients', `+${fr3(t.expectedIn)}`, C.good],
+    ['Charges', fr3(-t.charges), C.bad],
   ], ['Trésorerie attendue', fr3(t.cashEstimate)]);
   const right = bridge(L + half + 24, half, 'Ce que l’apport est devenu', [
     ['Stock, au prix d’achat', fr3(t.stockCost)],
     ['Trésorerie attendue', fr3(t.cashEstimate)],
     ['À encaisser', fr3(t.receivable)],
+    ['Dettes fournisseurs', fr3(-t.supplierDebt), C.bad],
     ['Timbres fiscaux à reverser à l’État', fr3(-t.stamps), C.bad],
-  ], ['Valeur au prix d’achat', fr3(t.position - t.stamps)],
+  ], ['Valeur nette, au prix d’achat', fr3(t.netValue)],
      ['Par rapport à l’apport', `${t.gain >= 0 ? '+' : ''}${fr3(t.gain)}`, t.gain >= 0 ? C.good : C.bad]);
   y = Math.max(left, right) + 8;
   para(`Encaissements retenus : les ${t.invoices} ventes facturées (${fr3(t.invoiced)} DT), moins ce qui reste dû (${fr3(t.receivable)} DT). Les paiements enregistrés dans l’application totalisent ${fr3(t.recordedIn)} DT${Math.abs(t.recordedIn - t.expectedIn) > 0.0005 ? ` ; l’écart de ${fr3(t.recordedIn - t.expectedIn)} DT est expliqué dans les contrôles` : ''}.`, { size: 8.2 });
 
-  const calloutText = `L’application suit le stock, les ventes et les encaissements. Elle n’enregistre ni le loyer, ni les salaires, ni le transport, ni l’électricité, ni l’aménagement du magasin. La trésorerie attendue de ${fr3(t.cashEstimate)} DT est donc un maximum : l’écart avec l’argent réellement en caisse et en banque correspond à ces charges.`;
+  const calloutText = `La trésorerie attendue de ${fr3(t.cashEstimate)} DT tient compte des charges enregistrées dans l’application (${fr3(t.charges)} DT). Comparez-la à l’argent réellement en caisse et en banque : un écart signale une dépense ou un paiement qui n’a pas été saisi.`;
   const ch = height(calloutText, F.regular, 8.6, CW - 26) + 30;
   ensure(ch);
   doc.save().rect(L, y, CW, ch).fill(C.warnSoft).rect(L, y, 3, ch).fill(C.warn).restore();
-  font(F.bold, 8.8, C.ink).text('Charges non comprises', L + 14, y + 9);
+  font(F.bold, 8.8, C.ink).text('À comparer avec la caisse', L + 14, y + 9);
   font(F.regular, 8.6, C.ink).text(calloutText, L + 14, y + 23, { width: CW - 26, lineGap: 1 });
   y += ch + 14;
 
   // ── Purchases ──────────────────────────────────────────────────────────
-  newPage();
+  chapter();
   section('Achats', `${fr3(t.spent)} DT de marchandises`,
-    'Chaque article est compté au prix d’achat enregistré dans l’application, pour toutes les unités entrées : imports de factures fournisseurs, stock de départ et corrections manuelles.');
+    `Chaque article est compté au prix d’achat enregistré dans l’application, pour toutes les unités entrées : imports de factures fournisseurs, stock de départ et corrections manuelles. ${t.supplierDebt > 0 ? `Sur ce montant, ${fr3(t.supplierDebt)} DT restent dus aux fournisseurs.` : 'Aucune dette fournisseur n’est enregistrée : ces achats sont considérés comme payés.'}`);
   table([{ title: 'Famille', width: 3 }, { title: 'Références', width: 1, align: 'right' }, { title: 'Articles', width: 1, align: 'right' },
          { title: 'Montant', width: 1.6, align: 'right' }, { title: 'Part de l’apport', width: 1.4, align: 'right' }],
     rep.families.filter((f) => f.refs > 0).map((f) => [f.name, String(f.refs), String(f.unitsIn), fr3(f.spent),
@@ -254,7 +273,7 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
     ['', 'Total', '', '', String(t.unitsBought), '', fr3(t.spent)]);
 
   // ── Sales ──────────────────────────────────────────────────────────────
-  newPage();
+  chapter();
   section('Ventes', `${t.invoices} factures, ${fr3(t.revenue)} DT`,
     `Ventes classées à la date de facture. Les remises accordées au comptoir représentent ${fr3(t.discounts)} DT${t.listValue ? `, soit ${pct((t.discounts / t.listValue) * 100)} des prix affichés` : ''}. Le timbre fiscal de 1 DT par facture (${fr3(t.stamps)} DT) est collecté pour l’État et n’entre pas dans les ventes.`);
   if (rep.timeline.length) {
@@ -285,7 +304,7 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
       pct(((f.revenue - f.cogs) / f.revenue) * 100)]),
     ['Total', String(t.unitsSold), fr3(t.revenue), fr3(t.cogs), fr3(t.margin), t.revenue ? pct((t.margin / t.revenue) * 100) : '—'], 8);
   subhead('Toutes les ventes facturées');
-  table([{ title: 'Fact.', width: 0.62 }, { title: 'Date', width: 1.32 }, { title: 'Cde', width: 0.6 }, { title: 'Client', width: 1.55 },
+  table([{ title: 'N°', width: 0.62 }, { title: 'Date', width: 1.32 }, { title: 'Cde', width: 0.6 }, { title: 'Client', width: 1.55 },
          { title: 'Article', width: 2.45 }, { title: 'Qté', width: 0.6, align: 'right' }, { title: 'Prix affiché', width: 1.25, align: 'right' },
          { title: 'Prix vendu', width: 1.25, align: 'right' }, { title: 'Remise', width: 1.2, align: 'right' }, { title: 'Coût', width: 1.28, align: 'right' },
          { title: 'Marge', width: 1.18, align: 'right' }],
@@ -311,8 +330,37 @@ export async function renderInvestorReportPdf(rep: InvestorReport, opts: { busin
       fr3(p.amount), { text: p.flag, color: C.warn }]),
     ['', '', '', 'Total', fr3(t.recordedIn), '']);
 
+  // ── Charges ────────────────────────────────────────────────────────────
+  section('Charges', `${fr3(t.charges)} DT de charges`,
+    rep.chargeRows.length
+      ? 'L’argent sorti du magasin sans acheter de stock : rémunérations, fournitures, transport, frais payés sur les commandes.'
+      : 'Aucune charge n’est enregistrée dans l’application.');
+  if (rep.chargeRows.length) {
+    table([{ title: 'Catégorie', width: 4 }, { title: 'Dépenses', width: 1, align: 'right' }, { title: 'Montant', width: 1.5, align: 'right' }, { title: 'Part', width: 1, align: 'right' }],
+      rep.chargesByCategory.map((c) => [CHARGE_LABEL[c.category] ?? c.category, String(c.count), fr3(c.total), pct((c.total / (t.charges || 1)) * 100)]),
+      ['Total', String(rep.chargeRows.length), fr3(t.charges), ''], 8);
+    subhead('Détail des charges');
+    table([{ title: 'Date', width: 1.1 }, { title: 'Catégorie', width: 1.9 }, { title: 'Bénéficiaire', width: 1.6 }, { title: 'Description', width: 3.4 },
+           { title: 'Mode', width: 0.9 }, { title: 'Montant', width: 1.2, align: 'right' }],
+      rep.chargeRows.map((c) => [dfr(c.date), CHARGE_LABEL[c.category] ?? c.category, c.beneficiary || '—', c.description || '—', METHOD_LABEL[c.method] ?? c.method, fr3(c.amount)]),
+      ['', '', '', 'Total', '', fr3(t.charges)]);
+  }
+
+  // ── Supplier debts ─────────────────────────────────────────────────────
+  section('Fournisseurs', `${fr3(t.supplierDebt)} DT dus aux fournisseurs`,
+    rep.debts.length
+      ? 'Les marchandises reçues et pas encore entièrement payées. Un achat sans dette enregistrée est considéré comme payé.'
+      : 'Aucune dette n’est enregistrée : tous les achats sont considérés comme payés.');
+  if (rep.debts.length) {
+    table([{ title: 'Date', width: 1.1 }, { title: 'Fournisseur', width: 3.2 }, { title: 'Réf.', width: 1.4 }, { title: 'Total', width: 1.3, align: 'right' },
+           { title: 'Payé', width: 1.3, align: 'right' }, { title: 'Reste à payer', width: 1.3, align: 'right' }],
+      rep.debts.map((d) => [dfr(d.date), d.supplierName, d.reference || '—', fr3(d.total), fr3(d.paid),
+        { text: fr3(d.remaining), color: d.remaining > 0.0005 ? C.bad : C.good, bold: true }]),
+      ['', 'Total', '', fr3(rep.debts.reduce((n, d) => n + d.total, 0)), fr3(rep.debts.reduce((n, d) => n + d.paid, 0)), fr3(t.supplierDebt)]);
+  }
+
   // ── Stock ──────────────────────────────────────────────────────────────
-  newPage();
+  chapter();
   const top1 = rep.stock[0];
   section('Stock', `${t.unitsOnHand} articles en magasin, ${fr3(t.stockCost)} DT`,
     top1 ? `${t.spent ? `${pct((t.stockCost / t.spent) * 100)} des marchandises achetées sont encore en stock. ` : ''}La référence la plus lourde, ${top1.name}, représente ${fr3(top1.valueCost)} DT (${top1.onHand} unités), soit ${pct((top1.valueCost / (t.stockCost || 1)) * 100)} du stock.` : undefined);

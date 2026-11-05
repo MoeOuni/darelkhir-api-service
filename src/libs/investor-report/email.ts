@@ -20,16 +20,19 @@ export function renderInvestorReportEmail(rep: InvestorReport, o: { businessName
     ['Achats de marchandises', `${fr3(t.spent)} DT`],
     ['Ventes', `${fr3(t.revenue)} DT (${t.invoices} factures)`],
     ['Marge brute', `${fr3(t.margin)} DT`],
+    ['Charges', `${fr3(t.charges)} DT`],
+    ['Résultat (marge moins charges)', `${fr3(t.gain)} DT`],
     ['Stock restant, au prix d’achat', `${fr3(t.stockCost)} DT (${t.unitsOnHand} articles)`],
     ['Trésorerie attendue', `${fr3(t.cashEstimate)} DT`],
     ['À encaisser', `${fr3(t.receivable)} DT`],
+    ['Dettes fournisseurs', `${fr3(t.supplierDebt)} DT`],
   ];
   const subject = `Rapport aux investisseurs ${o.businessName}, situation au ${asOf}`;
   const intro = `Voici la situation de ${o.businessName} au ${asOf} à ${at}${o.requestedBy ? `, demandée par ${o.requestedBy}` : ''}. Le rapport complet est en pièce jointe (PDF, ${o.pages} pages).`;
   const note = open
     ? `${open} point${open > 1 ? 's' : ''} à vérifier dans les données : voir la section « Contrôles » du rapport.`
     : 'Les contrôles automatiques n’ont relevé aucun écart.';
-  const footer = 'La trésorerie attendue ne tient pas compte des charges non enregistrées dans l’application (loyer, salaires, transport…).';
+  const footer = 'La trésorerie attendue tient compte des charges saisies dans l’application. À comparer à l’argent réellement en caisse et en banque : un écart signale une dépense non saisie.';
 
   const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#13202b">
 <div style="max-width:560px;margin:0 auto;padding:24px 16px">

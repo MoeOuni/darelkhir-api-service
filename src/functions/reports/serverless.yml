@@ -47,6 +47,7 @@ sendInvestorReport:
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}
           - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.financeTableName}
       - Effect: Allow
         Action: [dynamodb:GetItem, dynamodb:Query]
         Resource:

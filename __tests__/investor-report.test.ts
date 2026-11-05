@@ -55,6 +55,8 @@ const source = (over: Partial<ReportSource> = {}): ReportSource => ({
     { sk: 'CLIENT#c3', fullName: 'Nadia', balance: 200 },
   ],
   agreedPrices: 1,
+  charges: [],
+  supplierDebts: [],
   ...over,
 });
 

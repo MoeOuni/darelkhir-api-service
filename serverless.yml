@@ -74,6 +74,7 @@ provider:
     JOURNAL_TABLE_NAME: !Ref JournalTable
     STAFF_TABLE_NAME: !Ref StaffTable
     CATALOG_TABLE_NAME: !Ref CatalogTable
+    FINANCE_TABLE_NAME: !Ref FinanceTable
     PAYMENTS_TABLE_NAME: !Ref PaymentsTable
     COGNITO_USER_POOL_ID: !Ref StaffUserPool
     CLIENTS_USER_POOL_ID: !Ref CustomersUserPool
@@ -101,6 +102,7 @@ functions:
   - ${file(src/functions/journal/serverless.yml)}
   - ${file(src/functions/staff/serverless.yml)}
   - ${file(src/functions/reports/serverless.yml)}
+  - ${file(src/functions/finance/serverless.yml)}
   - ${file(src/functions/catalog/serverless.yml)}
   - ${file(src/functions/payments/serverless.yml)}
 
@@ -125,6 +127,7 @@ custom:
   journalTableName: ${self:service}-journal-${self:provider.stage}-table
   staffTableName: ${self:service}-staff-${self:provider.stage}-table
   catalogTableName: ${self:service}-catalog-${self:provider.stage}-table
+  financeTableName: ${self:service}-finance-${self:provider.stage}-table
   paymentsTableName: ${self:service}-payments-${self:provider.stage}-table
   s3BucketName: ${self:service}-${self:provider.stage}-storage-${aws:accountId}
   esbuild:

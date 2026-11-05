@@ -1,0 +1,42 @@
+finance:
+    handler: src/functions/finance/endpoint.handler
+    description: Charges, supplier debts and the money in hand
+    timeout: 25
+    memorySize: 512
+    events:
+      - httpApi: { path: /charges, method: GET }
+      - httpApi: { path: /charges, method: POST }
+      - httpApi: { path: '/charges/{id}', method: PATCH }
+      - httpApi: { path: '/charges/{id}', method: DELETE }
+      - httpApi: { path: /supplier-debts, method: GET }
+      - httpApi: { path: /supplier-debts, method: POST }
+      - httpApi: { path: '/supplier-debts/{id}', method: PATCH }
+      - httpApi: { path: '/supplier-debts/{id}', method: DELETE }
+      - httpApi: { path: '/supplier-debts/{id}/payments', method: POST }
+      - httpApi: { path: '/supplier-debts/{id}/payments/{paymentId}', method: DELETE }
+      - httpApi: { path: /finance/summary, method: GET }
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+          - dynamodb:DeleteItem
+          - dynamodb:Query
+          - dynamodb:Scan
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.financeTableName}
+      # The money in hand reads the same history as the investor report.
+      - Effect: Allow
+        Action: [dynamodb:Scan]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.productsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.categoriesTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.ordersTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.paymentsTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.journalTableName}
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.clientsTableName}
+      - Effect: Allow
+        Action: [dynamodb:GetItem, dynamodb:Query]
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:custom.settingsTableName}

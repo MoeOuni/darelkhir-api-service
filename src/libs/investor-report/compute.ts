@@ -27,6 +27,10 @@ export type ReportSource = {
   clients: Row[];
   /** How many prices are pinned to a client's file. */
   agreedPrices: number;
+  /** Money that left the shop and bought no stock. */
+  charges: Row[];
+  /** Goods bought and not fully paid for. */
+  supplierDebts: Row[];
 };
 
 export type Check = { ok: boolean; title: string; detail: string };
@@ -232,9 +236,36 @@ export function computeInvestorReport(src: ReportSource) {
     })
     .sort((a, b) => a.family.localeCompare(b.family) || a.code.localeCompare(b.code));
 
+  // ── Money out ──────────────────────────────────────────────────────────
+  // Charges written down, plus what the shop paid out on its own orders — a
+  // loader, a crane. Those already come off the margin in the sales reports,
+  // under the same rule: invoiced orders that were not cancelled. What a client
+  // settled with the loader directly was never the shop's money.
+  const chargeRows = [
+    ...src.charges.map((c) => ({ date: String(c.date), category: String(c.category), beneficiary: c.beneficiary ?? '',
+                                 description: c.description ?? '', amount: Number(c.amount), method: String(c.method ?? 'cash') })),
+    ...sales.flatMap((o) => (o.charges ?? []).filter((c: Row) => c.paidBy === 'shop').map((c: Row) => ({
+      date: day(o.invoiceIssuedAt || o.createdAt), category: 'order', beneficiary: '', description: `${c.label} (commande #${o.orderNumber})`,
+      amount: Number(c.amount), method: 'cash' }))),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+  const charges = r3(chargeRows.reduce((s, c) => s + c.amount, 0));
+  const chargesByCategory = [...new Set(chargeRows.map((c) => c.category))]
+    .map((category) => ({ category, count: chargeRows.filter((c) => c.category === category).length,
+                          total: r3(chargeRows.filter((c) => c.category === category).reduce((s, c) => s + c.amount, 0)) }))
+    .sort((a, b) => b.total - a.total);
+
+  // A purchase with no debt against it was paid in full; a debt says how much
+  // of one was not. So what was actually paid is the goods minus what is owed.
+  const debts = [...src.supplierDebts]
+    .map((d) => ({ supplierName: d.supplierName ?? '', reference: d.reference ?? '', date: String(d.date), total: Number(d.total), paid: Number(d.paid ?? 0),
+                   remaining: r3(Number(d.total) - Number(d.paid ?? 0)), payments: (d.payments ?? []) as Row[] }))
+    .sort((a, b) => b.remaining - a.remaining || b.date.localeCompare(a.date));
+  const supplierDebt = r3(debts.reduce((s, d) => s + d.remaining, 0));
+  const paidToSuppliers = r3(spent - supplierDebt);
+
   const margin = r3(revenue - cogs);
   const identityGap = r3(spent - cogs - stockCost);
-  const cashEstimate = r3(src.investment - spent + expectedIn);
+  const cashEstimate = r3(src.investment - paidToSuppliers + expectedIn - charges);
   const position = r3(stockCost + cashEstimate + receivable);
 
   // ── Checks ─────────────────────────────────────────────────────────────
@@ -266,6 +297,8 @@ export function computeInvestorReport(src: ReportSource) {
   const losses = saleLines.filter((l) => l.margin < -0.0005);
   if (losses.length) checks.push({ ok: false, title: 'Ventes à perte',
     detail: losses.map((l) => `facture ${String(l.invoice).padStart(3, '0')}, ${l.code} : ${fr3(l.margin)} DT`).join(' ; ') });
+  if (supplierDebt > spent + 0.0005) checks.push({ ok: false, title: 'Dettes fournisseurs supérieures aux achats',
+    detail: `${fr3(supplierDebt)} DT sont dus aux fournisseurs pour ${fr3(spent)} DT d’achats en stock : des marchandises ont sans doute été facturées sans être entrées en stock.` });
   if (src.agreedPrices > 0) checks.push({ ok: false, title: 'Prix négociés enregistrés comme prix permanents',
     detail: `${src.agreedPrices} prix sont fixés sur des fiches clients et s’appliqueront à chacun de leurs prochains achats.` });
 
@@ -275,9 +308,13 @@ export function computeInvestorReport(src: ReportSource) {
     totals: {
       investment: src.investment, spent, unitsBought, revenue, cogs, margin, listValue, discounts: r3(listValue - revenue),
       stamps, invoiced, invoices: sales.length, unitsSold, recordedIn, expectedIn, receivable, flaggedAmount,
-      stockCost, stockPrice, unitsOnHand, cashEstimate, position, gain: r3(position - stamps - src.investment), identityGap,
+      stockCost, stockPrice, unitsOnHand, cashEstimate, position, charges, supplierDebt, paidToSuppliers,
+      // What is owned, less what is owed — to the State and to suppliers.
+      netValue: r3(position - stamps - supplierDebt),
+      gain: r3(position - stamps - supplierDebt - src.investment), identityGap,
     },
     families, purchases, saleLines, timeline, paymentRows, owing, credits, stock, reconciliation, checks,
+    chargeRows, chargesByCategory, debts,
     excluded: [...cancelled, ...pending].sort((a, b) => a.orderNumber - b.orderNumber).map((o) => ({
       order: Number(o.orderNumber), date: o.createdAt, client: o.clientName ?? '', total: Number(o.total || 0), status: o.status,
       invoice: o.invoiceNumber ? Number(o.invoiceNumber) : null, creditNote: o.creditNoteNumber ? Number(o.creditNoteNumber) : null,

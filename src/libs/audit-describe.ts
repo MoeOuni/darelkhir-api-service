@@ -120,6 +120,21 @@ export function describeAudit(
     meta.phone = str(d.phone) ?? str(b.phone);
   }
 
+  if (group === 'charge') {
+    meta.amount = num(d.amount) ?? num(b.amount);
+    meta.method = str(d.method) ?? str(b.method);
+    meta.name = str(d.beneficiary) ?? str(b.beneficiary) ?? str(d.description) ?? str(b.description);
+  }
+
+  if (group === 'supplier_debt') {
+    meta.name = str(d.supplierName) ?? str(b.supplierName);
+    meta.total = num(d.total) ?? num(b.total);
+    // On a payment the response is the whole debt: only the body says how much
+    // was handed over this time.
+    meta.amount = num(b.amount);
+    meta.method = str(b.method);
+  }
+
   // Drop the keys we could not fill, so the stored record stays small.
   for (const key of Object.keys(meta)) {
     if (meta[key] === undefined) delete meta[key];

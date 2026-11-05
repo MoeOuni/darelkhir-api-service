@@ -8,6 +8,7 @@ import {
   OrderSource,
   DeliveryState,
   PaymentType,
+  ChargeCategory,
   CheckStatus,
   StockMovementType,
   RequestStatus,
@@ -48,6 +49,65 @@ export interface ISettings {
   investorCapital?: number;
   /** Who receives the investor report by email. */
   reportRecipients?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Money that left the shop and did not buy stock.
+ *
+ * Paying someone, buying supports, a delivery. It comes off the money in hand
+ * and off what the shop earned. Paying a supplier is not one of these: goods
+ * are already counted as purchases, so counting them here would count them
+ * twice.
+ */
+export interface ICharge {
+  id: string;
+  sk: string;
+  dataType: DataType;
+  /** The day the money left. Not always the day it was written down. */
+  date: string;
+  amount: number;
+  category: ChargeCategory;
+  /** Who received it, when that matters: "Yahya", "Bilal". */
+  beneficiary?: string;
+  description?: string;
+  method: PaymentType;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ISupplierDebtPayment {
+  id: string;
+  date: string;
+  amount: number;
+  method: PaymentType;
+  note?: string;
+}
+
+/**
+ * Goods bought and not fully paid for.
+ *
+ * "We bought 8 680 and paid 5 000." The goods themselves are entered in stock
+ * the usual way; this records only how much of the bill is still owed. A
+ * purchase with no debt recorded is taken as paid in full, so the shop only
+ * writes down the exceptions.
+ */
+export interface ISupplierDebt {
+  id: string;
+  sk: string;
+  dataType: DataType;
+  supplierName: string;
+  /** The supplier's invoice number, when there is one. */
+  reference?: string;
+  date: string;
+  total: number;
+  /** Kept with the payments so "is there room for this one?" is one atomic check. */
+  paid: number;
+  payments: ISupplierDebtPayment[];
+  notes?: string;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }

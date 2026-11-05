@@ -11,6 +11,8 @@ export enum DataType {
   SETTINGS = 'SETTINGS',
   PAYMENT = 'PAYMENT',
   STOCK_MOVEMENT = 'STOCK_MOVEMENT',
+  CHARGE = 'CHARGE',
+  SUPPLIER_DEBT = 'SUPPLIER_DEBT',
   AUDIT_LOG = 'AUDIT_LOG',
   STAFF = 'STAFF',
   ROLE = 'ROLE',
@@ -144,4 +146,17 @@ export enum CategoryStatus {
 export enum PaymentMethod {
   BANK_ACCOUNT = 'bank_account',
   CASH_ON_DELIVERY = 'cash_on_delivery',
+}
+
+/** What a charge was for. Stock is never one of these: it is counted as a purchase. */
+export enum ChargeCategory {
+  /** Paying a person: Yahya, Bilal, a helper. */
+  PAY = 'pay',
+  /** Supports, packaging, tools, anything bought for the shop rather than to resell. */
+  SUPPLIES = 'supplies',
+  TRANSPORT = 'transport',
+  RENT = 'rent',
+  /** Electricity, water, phone, internet. */
+  UTILITIES = 'utilities',
+  OTHER = 'other',
 }
